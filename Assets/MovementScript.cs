@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,45 +9,67 @@ public class MovementScript : MonoBehaviour {
     public Camera cam;
 
     public float forceMultiplier;
-    public float launchForce;
+    private float launchForce;
+    private Vector3 arrowVector;
 
-    public Vector3 arrowVector;
     public LineRenderer lineRenderer;
 
-    float clickStartPosX;
-    float clickStartPosY;
+    Vector3 clickStartPos;
 
 	// Use this for initialization
 	void Start () {
-		
+		    
 	}
 	
 	// Update is called once per frame
 	void Update () {
-		
-	}
+
+    }
 
     void OnMouseDown() {
-        clickStartPosX = cam.WorldToScreenPoint(rb.transform.position).x;
-        clickStartPosY = cam.WorldToScreenPoint(rb.transform.position).y;
-
-        Debug.Log(cam.WorldToScreenPoint(rb.transform.position));
+        lineRenderer.enabled = true;
+        lineRenderer.SetPosition(0, transform.position);
+        clickStartPos = transform.position;
+        //Debug.Log(clickStartPos + " ja sit normi: " + cam.ScreenToWorldPoint(Input.mousePosition));
+        //Debug.Log(transform.up);
     }
 
     private void OnMouseDrag() //TODO: min launchforce (jos alle ni ei lähe), max launchforce. kunnon indikaattori voimalle
     {
-        Vector3 mousePos = Input.mousePosition;
-        //Debug.Log(clickStartPosX + ", " + mousePos.x + " : " + clickStartPosY + ", " + mousePos.y);
+        Vector3 mousePos = GetCurrentMousePosition();
 
-        arrowVector = new Vector3((clickStartPosX - mousePos.x) * forceMultiplier, 0, (clickStartPosY - mousePos.y) * forceMultiplier);
+        launchForce = Vector3.Distance(mousePos, clickStartPos);
+        Debug.Log(clickStartPos);
+        arrowVector = (clickStartPos - mousePos) * forceMultiplier;
 
-        launchForce = arrowVector.magnitude;
+        lineRenderer.positionCount = 2;
+        lineRenderer.SetPosition(1, transform.position + (transform.position - GetCurrentMousePosition()));
 
-        Debug.DrawLine(arrowVector, rb.transform.position);
-        }
+
+
+    }
 
     void OnMouseUp()
     {
+        
         rb.AddForce(arrowVector);
+        lineRenderer.enabled = false;
+        lineRenderer.positionCount = 1;
+    }
+
+    private Vector3 GetCurrentMousePosition()
+    {
+        var ray = cam.ScreenPointToRay(Input.mousePosition);
+        var plane = new Plane(transform.position, transform.position + transform.right, transform.position + transform.forward);
+        Debug.DrawLine(transform.position, transform.position + transform.right);
+        Debug.DrawLine(transform.position + transform.right, transform.position + transform.forward);
+        Debug.DrawLine(transform.position + transform.forward, transform.position);
+        float rayDistance;
+        if (plane.Raycast(ray, out rayDistance))
+        {
+            return ray.GetPoint(rayDistance);
+        }
+
+        throw new Exception("Error getting current mouse position");
     }
 }
